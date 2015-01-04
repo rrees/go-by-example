@@ -17,5 +17,31 @@ func main() {
 		fmt.Println("Request ", req, time.Now())
 	}
 
-	
+	fmt.Println("Capped number requests")
+
+	burstyLimiter := make(chan time.Time, 3)
+
+	for i := 0; i < 3; i++ {
+		burstyLimiter <- time.Now()
+	}
+
+	go func() {
+		for t := range time.Tick(time.Millisecond * 200) {
+			burstyLimiter <- t
+		}
+	}()
+
+	burstyRequests := make(chan int, 5)
+
+	for i := 1; i <= 5; i++ {
+		burstyRequests <- i
+	}
+
+	close(burstyRequests)
+
+	for req := range burstyRequests {
+		<- burstyLimiter
+		fmt.Println("Request ", req, time.Now())
+	}
+
 }
